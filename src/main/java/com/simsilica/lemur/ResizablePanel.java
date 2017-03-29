@@ -3,6 +3,7 @@ package com.github.devconslejme;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.simsilica.lemur.GuiGlobals;
+import com.simsilica.lemur.Insets3f;
 import com.simsilica.lemur.Panel;
 import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.QuadBackgroundComponent;
@@ -18,6 +19,7 @@ public class ResizablePanel extends Panel {
 	private BorderLayout layout;
 	private Panel contents;
 	private int iBorderSize = 3;
+	private QuadBackgroundComponent	qbcBorder = new QuadBackgroundComponent();
 	
 	public static final String LAYER_RESIZABLE_BORDERS = "resizableBorders";
 	
@@ -34,6 +36,9 @@ public class ResizablePanel extends Panel {
                                                LAYER_BORDER, 
                                                LAYER_BACKGROUND,
                                                LAYER_RESIZABLE_BORDERS);
+    
+    setBorder(qbcBorder);
+    setBorderSize(iBorderSize);
     
     Styles styles = GuiGlobals.getInstance().getStyles();
     styles.applyStyles(this, getElementId().getId(), style);
@@ -70,14 +75,14 @@ public class ResizablePanel extends Panel {
 	    if( this.contents != null ) {
 	      if( contents.getParent() == null ) {
 	        layout.addChild(contents,  BorderLayout.Position.Center);
-	        setBorderSize(iBorderSize); //prepare the new one
+//	        contents.setInsets(new Insets3f(iBorderSize, iBorderSize, iBorderSize, iBorderSize));
 	      }
 	    }
 	}
 	
-	public ResizablePanel setBorderSize(int i){
+	public void setBorderSize(int i){
 		this.iBorderSize=i;
-    contents.setPreferredSize(getPreferredSize().subtract(new Vector3f(iBorderSize*2,iBorderSize*2,0)));
-		return this;
+    qbcBorder.setMargin(iBorderSize, iBorderSize);
 	}
+	
 }

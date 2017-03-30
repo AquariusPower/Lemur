@@ -29,8 +29,21 @@ public class ResizablePanel extends Panel implements Draggable {
 //	class ResizerCursorListener implements CursorListener{}
 	
 	private ResizerDragAndDropListener	dndlCursorListener = new ResizerDragAndDropListener();
-	public Vector3f	v3fDragFrom;
+	public Vector3f	v3fDragFromPrevious;
 	private Vector3f	v3fMinSize = new Vector3f(20,20,0);
+	enum EEdge{
+		Left,
+		Right,
+		
+		Top, //THIS ORDER MATTERS!
+		TopRight, //THIS ORDER MATTERS!
+		TopLeft, //THIS ORDER MATTERS!
+		
+		Bottom, //THIS ORDER MATTERS!
+		BottomRight, //THIS ORDER MATTERS!
+		BottomLeft, //THIS ORDER MATTERS!
+		;
+	}
 	class ResizerDragAndDropListener implements DragAndDropListener{
 		@Override
 		public Draggable onDragDetected(DragEvent event) {
@@ -43,7 +56,7 @@ public class ResizablePanel extends Panel implements Draggable {
 		@Override
 		public void onDragEnter(DragEvent event) {
 			if(event.getTarget()==ResizablePanel.this){
-				v3fDragFrom = event.getCollision().getContactPoint();
+				v3fDragFromPrevious = event.getCollision().getContactPoint();
 			}
 		}
 
@@ -53,7 +66,7 @@ public class ResizablePanel extends Panel implements Draggable {
 				event.getClass();//TODO rem
 			}
 		}
-
+		
 		@Override
 		public void onDragOver(DragEvent event) {
 			if(event.getTarget()==ResizablePanel.this){
@@ -64,32 +77,81 @@ public class ResizablePanel extends Panel implements Draggable {
 				
 				Vector3f v3fNewSize = v3fOldSize.clone();
 				
-				float fDeltaX = v3fDragFrom.x - event.getX();
-				float fDeltaY = v3fDragFrom.y - event.getY();
-				if(fDeltaY!=0){
-					event.getClass();//TODO rm
+				//                  NEW                OLD
+				float fDeltaX = event.getX() - v3fDragFromPrevious.x; // positive to the right
+				float fDeltaY = event.getY() - v3fDragFromPrevious.y; // positive downwards
+				
+				if(fDeltaX!=0 || fDeltaY!=0){
+					event.getClass(); //TODO rm tmp debug breakpoint
 				}
 				
-				float fEdgeMultX=1.0f;if(event.getX()>v3fPanelCenterOnApp.x)fEdgeMultX=-1.0f;
-				float fEdgeMultY=1.0f;if(event.getY()<v3fPanelCenterOnApp.y)fEdgeMultX=-1.0f;
+				EEdge ee=null;
+				if(event.getY()>v3fPanelCenterOnApp.y){ee=EEdge.Top;}else{ee=EEdge.Bottom;}
+				if(event.getX()>v3fPanelCenterOnApp.x){
+					ee=EEdge.values()[ee.ordinal()+1]; //Right
+				}else{
+					ee=EEdge.values()[ee.ordinal()+2]; //Left
+				}
 				
-				v3fNewSize.x-=fEdgeMultX*fDeltaX;
-				v3fNewSize.y+=fEdgeMultY*fDeltaY;
+				Vector3f v3fNewPos = ResizablePanel.this.getLocalTranslation().clone();
+				switch(ee){
+					case Left:
+						fDeltaY=0;
+						break;
+					case Right:
+						fDeltaY=0;
+						break;
+						
+					case Top:
+						fDeltaX=0;
+						v3fNewSize.y+=fDeltaY;
+						v3fNewPos.y+=fDeltaY;
+						break;
+					case TopRight:
+						v3fNewSize.y+=fDeltaY;
+						v3fNewPos.y+=fDeltaY;
+						break;
+					case TopLeft:
+						v3fNewSize.y+=fDeltaY;
+						v3fNewPos.y+=fDeltaY;
+						break;
+						
+					case Bottom:
+						fDeltaX=0;
+						v3fNewSize.y-=fDeltaY;
+						break;
+					case BottomRight:
+						v3fNewSize.y-=fDeltaY;
+						break;
+					case BottomLeft:
+						v3fNewSize.y-=fDeltaY;
+						break;
+				}
 				
-				v3fDragFrom.x-=fDeltaX;
-				v3fDragFrom.y-=fDeltaY;
+//				float fEdgeMultX=1.0f;if(event.getX()>v3fPanelCenterOnApp.x)fEdgeMultX=-1.0f;
+//				float fEdgeMultY=1.0f;if(event.getY()<v3fPanelCenterOnApp.y)fEdgeMultX=-1.0f;
 				
+//				v3fNewSize.x+=fEdgeMultX*fDeltaX;
+//				v3fNewSize.y+=fEdgeMultY*fDeltaY;
+				
+				v3fDragFromPrevious.x+=fDeltaX;
+				v3fDragFromPrevious.y+=fDeltaY;
+//				v3fDragFromPrevious.x+=event.getX();
+//				v3fDragFromPrevious.y+=event.getY();
+				
+				// constraint
 				if(v3fNewSize.x<v3fMinSize.x)v3fNewSize.x=v3fMinSize.x;
 				if(v3fNewSize.y<v3fMinSize.y)v3fNewSize.y=v3fMinSize.y;
 				
 				ResizablePanel.this.setPreferredSize(v3fNewSize);
+				ResizablePanel.this.setLocalTranslation(v3fNewPos);
 			}
 		}
 
 		@Override
 		public void onDrop(DragEvent event) {
 			if(event.getTarget()==ResizablePanel.this){
-				v3fDragFrom=null;
+				v3fDragFromPrevious=null;
 			}
 		}
 

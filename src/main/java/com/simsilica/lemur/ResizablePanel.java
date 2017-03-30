@@ -27,8 +27,6 @@
 
 package com.github.devconslejme;
 
-import org.lwjgl.input.Mouse;
-
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
@@ -45,8 +43,6 @@ import com.simsilica.lemur.event.CursorButtonEvent;
 import com.simsilica.lemur.event.CursorEventControl;
 import com.simsilica.lemur.event.CursorListener;
 import com.simsilica.lemur.event.CursorMotionEvent;
-import com.simsilica.lemur.event.MouseAppState;
-import com.simsilica.lemur.event.MouseEventControl;
 import com.simsilica.lemur.style.Attributes;
 import com.simsilica.lemur.style.ElementId;
 import com.simsilica.lemur.style.StyleAttribute;
@@ -192,7 +188,7 @@ public class ResizablePanel extends Panel implements Draggable {
 		}
 		
 		if(bConstraintReached){
-			resetDrag(); //avoids drag with no button holded
+//			resetDrag(); //avoids drag with no button holded
 		}else{
 			setPreferredSize(v3fNewSize);
 			setLocalTranslation(v3fNewPos);
@@ -232,31 +228,33 @@ public class ResizablePanel extends Panel implements Draggable {
   private class ResizerCursorListener implements CursorListener{
 		@Override
 		public void cursorButtonEvent(CursorButtonEvent event, Spatial target,				Spatial capture) {
-			if(target!=ResizablePanel.this){
-				if(!event.isPressed()){
-					event.setConsumed(); //this prevents sending the event to other than this panel
-					resetDrag();
-				}
-				return;
-			}
+			if(capture!=ResizablePanel.this)return;
+			
 			if(event.getButtonIndex()!=iMouseButtonIndex)return;
 			
 			if(event.isPressed()){
 				v3fDragFromPrevious=new Vector3f(event.getX(),event.getY(),0);
-				if(isDragEvenIfOutside()){
-					event.setConsumed(); 
-				}
+//				if(isDragEvenIfOutside()){
+					event.setConsumed(); //acknoledges event absorption
+//				}
 			}else{
-				resetDrag();
+//				if(target!=ResizablePanel.this){
+//					if(!event.isPressed()){
+//						event.setConsumed(); //this prevents sending the event to other than this panel
+//						resetDrag();
+//					}
+//					return;
+//				}
+				resetDrag(); // button UP ends all
+				event.setConsumed(); //this also prevents sending the event to other than this panel
 			}
 		}
 		
   	@Override
   	public void cursorMoved(CursorMotionEvent event, Spatial target, Spatial capture) {
   		if(v3fDragFromPrevious!=null){
-//  			if(!isBugfixUnrecognizedButtonUpEvent()){
-    			resizeThruDragging(event.getX(),event.getY());
-//  			}
+  			resizeThruDragging(event.getX(),event.getY());
+  			event.setConsumed(); //acknoledges event absorption 
   		}
   	}
 

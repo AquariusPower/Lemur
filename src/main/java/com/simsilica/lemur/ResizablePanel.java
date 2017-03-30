@@ -232,7 +232,13 @@ public class ResizablePanel extends Panel implements Draggable {
   private class ResizerCursorListener implements CursorListener{
 		@Override
 		public void cursorButtonEvent(CursorButtonEvent event, Spatial target,				Spatial capture) {
-			if(target!=ResizablePanel.this)return;
+			if(target!=ResizablePanel.this){
+				if(!event.isPressed()){
+					event.setConsumed(); //this prevents sending the event to other than this panel
+					resetDrag();
+				}
+				return;
+			}
 			if(event.getButtonIndex()!=iMouseButtonIndex)return;
 			
 			if(event.isPressed()){
@@ -248,9 +254,9 @@ public class ResizablePanel extends Panel implements Draggable {
   	@Override
   	public void cursorMoved(CursorMotionEvent event, Spatial target, Spatial capture) {
   		if(v3fDragFromPrevious!=null){
-  			if(!isBugfixUnrecognizedButtonUpEvent()){
+//  			if(!isBugfixUnrecognizedButtonUpEvent()){
     			resizeThruDragging(event.getX(),event.getY());
-  			}
+//  			}
   		}
   	}
 
@@ -264,13 +270,13 @@ public class ResizablePanel extends Panel implements Draggable {
 		
   }
   
-  private boolean isBugfixUnrecognizedButtonUpEvent(){
-		if(!Mouse.isButtonDown(iMouseButtonIndex)){ // LWJGL dependent code
-			resetDrag();
-			return true;
-		}
-		return false;
-  }
+//  private boolean isBugfixUnrecognizedButtonUpEvent(){
+//		if(!Mouse.isButtonDown(iMouseButtonIndex)){ // LWJGL dependent code
+//			resetDrag();
+//			return true;
+//		}
+//		return false;
+//  }
   
   @StyleDefaults("resizablePanel")
   public static void initializeDefaultStyles( Attributes attrs ) {

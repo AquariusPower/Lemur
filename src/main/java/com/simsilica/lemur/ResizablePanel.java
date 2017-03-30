@@ -108,11 +108,14 @@ public class ResizablePanel extends Panel implements Draggable {
 						v3fNewPos.y+=fDeltaY;
 						break;
 					case TopRight:
+						v3fNewSize.x+=fDeltaX;
 						v3fNewSize.y+=fDeltaY;
 						v3fNewPos.y+=fDeltaY;
 						break;
 					case TopLeft:
+						v3fNewSize.x-=fDeltaX;
 						v3fNewSize.y+=fDeltaY;
+						v3fNewPos.x+=fDeltaX;
 						v3fNewPos.y+=fDeltaY;
 						break;
 						
@@ -121,10 +124,13 @@ public class ResizablePanel extends Panel implements Draggable {
 						v3fNewSize.y-=fDeltaY;
 						break;
 					case BottomRight:
+						v3fNewSize.x+=fDeltaX;
 						v3fNewSize.y-=fDeltaY;
 						break;
 					case BottomLeft:
+						v3fNewSize.x-=fDeltaX;
 						v3fNewSize.y-=fDeltaY;
+						v3fNewPos.x+=fDeltaX;
 						break;
 				}
 				

@@ -49,6 +49,8 @@ import com.simsilica.lemur.style.StyleAttribute;
 import com.simsilica.lemur.style.StyleDefaults;
 import com.simsilica.lemur.style.Styles;
 
+// (tab indent=2 spaces)
+
 /**
  * @author Henrique Abdalla <https://github.com/AquariusPower><https://sourceforge.net/u/teike/profile/>
  */
@@ -77,28 +79,82 @@ public class ResizablePanel extends Panel implements Draggable {
 		BottomRight, //8
 		Dummy9,
 		BottomLeft,  //10
+		// I said THIS ORDER!!! not disorder... :)
 		;
-	} // I said THIS ORDER!!! not disorder... :)
+		
+		Float x,y;
+		public void set(Float x,Float y){
+			this.x=x;
+			this.y=y;
+		}
+		private void setFrom(EEdge ee1, EEdge ee2) {
+			x = useNotNull(ee1.x,ee2.x);
+			y = useNotNull(ee1.y,ee2.y);
+		}
+		private Float useNotNull(Float f1, Float f2){
+			return f1==null ? f2 : f1;
+		}
+		public Float getX(){return x;}
+		public Float getY(){return y;}
+		public static void setCurrentEdgesPos(Vector3f v3fPos, Vector3f v3fSize){
+			Top			.set(								null, 					v3fPos.y);
+			Bottom	.set(								null, v3fPos.y-v3fSize.y);
+			Left		.set(						v3fPos.x, 							null);
+			Right		.set(	v3fPos.x+v3fSize.x, 							null);
+			TopRight		.setFrom(Top,Right);
+			TopLeft			.setFrom(Top,Left);
+			BottomRight	.setFrom(Bottom,Right);
+			BottomLeft	.setFrom(Bottom,Left);
+		}
+		private float fMaxCurDistFromBorder = 10f;
+		public boolean isNearEnough(Vector3f v3fCursor){
+			switch(this){
+				case Top:
+				case Bottom:
+					return Math.abs(getY() - v3fCursor.y) < fMaxCurDistFromBorder;
+				case Left:
+				case Right:
+					return Math.abs(getX() - v3fCursor.x) < fMaxCurDistFromBorder;
+				case TopLeft:
+				case TopRight:
+				case BottomLeft:
+				case BottomRight:
+					return 	Math.abs(getY() - v3fCursor.y) < fMaxCurDistFromBorder &&
+									Math.abs(getX() - v3fCursor.x) < fMaxCurDistFromBorder;
+			}
+			throw new NullPointerException("bug: "+this);
+		}
+	} 
 	
 	EEdge eeInitialHook = null;
 	
+	private boolean isInsidePanel(Vector3f v3fCursor,Vector3f v3fOldPos,Vector3f v3fOldSize){
+		boolean bCursorInsidePanel = true;
+		if(			v3fCursor.x < v3fOldPos.x							)bCursorInsidePanel=false;
+		else if(v3fCursor.x > v3fOldPos.x+v3fOldSize.x	)bCursorInsidePanel=false;
+		else if(v3fCursor.y > v3fOldPos.y							)bCursorInsidePanel=false;
+		else if(v3fCursor.y < v3fOldPos.y-v3fOldSize.y	)bCursorInsidePanel=false;
+		return bCursorInsidePanel;
+	}
+	
 	private void resizeThruDragging(float fCursorX, float fCursorY){
+		Vector3f v3fCursor = new Vector3f(fCursorX,fCursorY,0);
+		
+		Vector3f v3fOldPos=getWorldTranslation().clone();
 		Vector3f v3fOldSize = new Vector3f(getPreferredSize());
+//		EEdge.setCurrentEdgesPos(v3fOldPos, v3fOldSize);
+		
 		Vector3f v3fPanelCenter=v3fOldSize.divide(2f);
 		
 		Vector3f v3fPanelCenterOnAppScreen=getWorldTranslation().add(
 			v3fPanelCenter.x,-v3fPanelCenter.y,0);
 		
-		Vector3f v3fNewSize = v3fOldSize.clone();
-		
-		//Cursor Position: NEW          Previous
-		float fDeltaX = fCursorX - v3fDragFromPrevious.x; // positive to the right
-		float fDeltaY = fCursorY - v3fDragFromPrevious.y; // positive downwards
+//		boolean bCursorInsidePanel = isInsidePanel(v3fCursor,v3fOldPos,v3fOldSize);
 		
 		EEdge ee=null;
 		if(eeInitialHook==null){
-			float fDistPanelCenterToCursorX = Math.abs(fCursorX - v3fPanelCenterOnAppScreen.x);
-			float fDistPanelCenterToCursorY = Math.abs(fCursorY - v3fPanelCenterOnAppScreen.y); 
+			float fDistPanelCenterToCursorX = Math.abs(v3fCursor.x - v3fPanelCenterOnAppScreen.x);
+			float fDistPanelCenterToCursorY = Math.abs(v3fCursor.y - v3fPanelCenterOnAppScreen.y); 
 			float fMaxDistX = v3fPanelCenter.x;
 			float fMaxDistY = v3fPanelCenter.y;
 			float fDistToBorderX = fMaxDistX - fDistPanelCenterToCursorX;
@@ -106,12 +162,12 @@ public class ResizablePanel extends Panel implements Draggable {
 				
 			EEdge eeX=null;
 			if(fDistToBorderX < fCornerHotSpotRange){
-				eeX = fCursorX>v3fPanelCenterOnAppScreen.x ? EEdge.Right : EEdge.Left;
+				eeX = v3fCursor.x>v3fPanelCenterOnAppScreen.x ? EEdge.Right : EEdge.Left;
 			}
 			
 			EEdge eeY=null;
 			if(fDistToBorderY < fCornerHotSpotRange){
-				eeY = fCursorY>v3fPanelCenterOnAppScreen.y ? EEdge.Top : EEdge.Bottom;
+				eeY = v3fCursor.y>v3fPanelCenterOnAppScreen.y ? EEdge.Top : EEdge.Bottom;
 			}
 			
 			if(eeX==null && eeY==null)throw new NullPointerException("impossible condition: cursor at no edge?");
@@ -130,8 +186,18 @@ public class ResizablePanel extends Panel implements Draggable {
 			ee=eeInitialHook;
 		}
 		
-		// resize and move
+//		if(!bCursorInsidePanel){
+//			if(!ee.isNearEnough(v3fCursor))return;
+//		}
+		
+		////////////// resize and move
 		Vector3f v3fNewPos = getLocalTranslation().clone();
+		Vector3f v3fNewSize = v3fOldSize.clone();
+		
+		//Cursor Position: NEW          Previous
+		float fDeltaX = v3fCursor.x - v3fDragFromPrevious.x; // positive to the right
+		float fDeltaY = v3fCursor.y - v3fDragFromPrevious.y; // positive downwards
+		
 		switch(ee){
 			case Top:
 				fDeltaX=0;
@@ -143,15 +209,15 @@ public class ResizablePanel extends Panel implements Draggable {
 				v3fNewSize.y+=fDeltaY;
 				v3fNewPos.y+=fDeltaY;
 				break;
-			case Right:
-				fDeltaY=0;
-				v3fNewSize.x+=fDeltaX;
-				break;
 			case TopLeft:
 				v3fNewSize.x-=fDeltaX;
 				v3fNewSize.y+=fDeltaY;
 				v3fNewPos.x+=fDeltaX;
 				v3fNewPos.y+=fDeltaY;
+				break;
+			case Right:
+				fDeltaY=0;
+				v3fNewSize.x+=fDeltaX;
 				break;
 			case Left:
 				fDeltaY=0;
@@ -173,26 +239,23 @@ public class ResizablePanel extends Panel implements Draggable {
 				break;
 		}
 		
-		v3fDragFromPrevious.x+=fDeltaX;
-		v3fDragFromPrevious.y+=fDeltaY;
-		
 		// constraint
-		boolean bConstraintReached = false;
 		if(v3fNewSize.x<getMinSize().x){
-			v3fNewSize.x=getMinSize().x;
-			bConstraintReached=true;
-		}
-		if(v3fNewSize.y<getMinSize().y){
-			v3fNewSize.y=getMinSize().y;
-			bConstraintReached=true;
+			v3fNewSize.x=v3fOldSize.x;
+			v3fNewPos.x=v3fOldPos.x;
+		}else{
+			v3fDragFromPrevious.x+=fDeltaX;
 		}
 		
-		if(bConstraintReached){
-//			resetDrag(); //avoids drag with no button holded
+		if(v3fNewSize.y<getMinSize().y){
+			v3fNewSize.y=v3fOldSize.y;
+			v3fNewPos.y=v3fOldPos.y;
 		}else{
-			setPreferredSize(v3fNewSize);
-			setLocalTranslation(v3fNewPos);
+			v3fDragFromPrevious.y+=fDeltaY;
 		}
+		
+		setPreferredSize(v3fNewSize);
+		setLocalTranslation(v3fNewPos);
 	}
 	
 	public static final String LAYER_RESIZABLE_BORDERS = "resizableBorders";

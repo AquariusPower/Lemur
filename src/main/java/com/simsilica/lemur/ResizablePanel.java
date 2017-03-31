@@ -66,7 +66,7 @@ public class ResizablePanel extends Panel implements Draggable {
 	private ResizerCursorListener dcl = new ResizerCursorListener();
 	private int	iMouseButtonIndex=0;
 	
-	enum EEdge{
+	public static enum EEdge{
 		// !!!!!!!!!!!!!!THIS ORDER IS IMPORTANT!!!!!!!!!!!!!!
 		Dummy0,
 		Top,         //1
@@ -83,6 +83,8 @@ public class ResizablePanel extends Panel implements Draggable {
 		;
 		
 		Float x,y;
+		private float fMaxCurDistFromBorder = 10f;
+		
 		public void set(Float x,Float y){
 			this.x=x;
 			this.y=y;
@@ -94,9 +96,7 @@ public class ResizablePanel extends Panel implements Draggable {
 		private Float useNotNull(Float f1, Float f2){
 			return f1==null ? f2 : f1;
 		}
-		public Float getX(){return x;}
-		public Float getY(){return y;}
-		public static void setCurrentEdgesPos(Vector3f v3fPos, Vector3f v3fSize){
+		private static void setCurrentEdgesPos(Vector3f v3fPos, Vector3f v3fSize){
 			Top			.set(								null, 					v3fPos.y);
 			Bottom	.set(								null, v3fPos.y-v3fSize.y);
 			Left		.set(						v3fPos.x, 							null);
@@ -106,34 +106,50 @@ public class ResizablePanel extends Panel implements Draggable {
 			BottomRight	.setFrom(Bottom,Right);
 			BottomLeft	.setFrom(Bottom,Left);
 		}
-		private float fMaxCurDistFromBorder = 10f;
+		
+		public Float getX(){return x;}
+		public Float getY(){return y;}
+		public float getMaxCurDistFromBorder() {
+			return fMaxCurDistFromBorder;
+		}
+		public void setMaxCurDistFromBorder(float fMaxCurDistFromBorder) {
+			this.fMaxCurDistFromBorder = fMaxCurDistFromBorder;
+		}
 		public boolean isNearEnough(Vector3f v3fCursor){
 			switch(this){
 				case Top:
 				case Bottom:
-					return Math.abs(getY() - v3fCursor.y) < fMaxCurDistFromBorder;
+					return Math.abs(getY() - v3fCursor.y) < getMaxCurDistFromBorder();
 				case Left:
 				case Right:
-					return Math.abs(getX() - v3fCursor.x) < fMaxCurDistFromBorder;
+					return Math.abs(getX() - v3fCursor.x) < getMaxCurDistFromBorder();
 				case TopLeft:
 				case TopRight:
 				case BottomLeft:
 				case BottomRight:
-					return 	Math.abs(getY() - v3fCursor.y) < fMaxCurDistFromBorder &&
-									Math.abs(getX() - v3fCursor.x) < fMaxCurDistFromBorder;
+					return 	Math.abs(getY() - v3fCursor.y) < getMaxCurDistFromBorder() &&
+									Math.abs(getX() - v3fCursor.x) < getMaxCurDistFromBorder();
 			}
 			throw new NullPointerException("bug: "+this);
 		}
+		
 	} 
 	
 	EEdge eeInitialHook = null;
 	
-	private boolean isInsidePanel(Vector3f v3fCursor,Vector3f v3fOldPos,Vector3f v3fOldSize){
+	public boolean isCursorInsidePanel(float fCursorX, float fCursorY){
+		return isCursorInsidePanel(
+			new Vector3f(fCursorX,fCursorY,0),
+			getWorldTranslation().clone(), 
+			new Vector3f(getPreferredSize())
+		);
+	}
+	private boolean isCursorInsidePanel(Vector3f v3fCursor,Vector3f v3fPos,Vector3f v3fSize){
 		boolean bCursorInsidePanel = true;
-		if(			v3fCursor.x < v3fOldPos.x							)bCursorInsidePanel=false;
-		else if(v3fCursor.x > v3fOldPos.x+v3fOldSize.x	)bCursorInsidePanel=false;
-		else if(v3fCursor.y > v3fOldPos.y							)bCursorInsidePanel=false;
-		else if(v3fCursor.y < v3fOldPos.y-v3fOldSize.y	)bCursorInsidePanel=false;
+		if(			v3fCursor.x < v3fPos.x							)bCursorInsidePanel=false;
+		else if(v3fCursor.x > v3fPos.x+v3fSize.x	)bCursorInsidePanel=false;
+		else if(v3fCursor.y > v3fPos.y							)bCursorInsidePanel=false;
+		else if(v3fCursor.y < v3fPos.y-v3fSize.y	)bCursorInsidePanel=false;
 		return bCursorInsidePanel;
 	}
 	
@@ -142,14 +158,12 @@ public class ResizablePanel extends Panel implements Draggable {
 		
 		Vector3f v3fOldPos=getWorldTranslation().clone();
 		Vector3f v3fOldSize = new Vector3f(getPreferredSize());
-//		EEdge.setCurrentEdgesPos(v3fOldPos, v3fOldSize);
+		EEdge.setCurrentEdgesPos(v3fOldPos, v3fOldSize);
 		
 		Vector3f v3fPanelCenter=v3fOldSize.divide(2f);
 		
 		Vector3f v3fPanelCenterOnAppScreen=getWorldTranslation().add(
 			v3fPanelCenter.x,-v3fPanelCenter.y,0);
-		
-//		boolean bCursorInsidePanel = isInsidePanel(v3fCursor,v3fOldPos,v3fOldSize);
 		
 		EEdge ee=null;
 		if(eeInitialHook==null){
@@ -185,10 +199,6 @@ public class ResizablePanel extends Panel implements Draggable {
 		}else{
 			ee=eeInitialHook;
 		}
-		
-//		if(!bCursorInsidePanel){
-//			if(!ee.isNearEnough(v3fCursor))return;
-//		}
 		
 		////////////// resize and move
 		Vector3f v3fNewPos = getLocalTranslation().clone();

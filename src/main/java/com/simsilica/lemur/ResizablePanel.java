@@ -62,7 +62,6 @@ public class ResizablePanel extends Panel implements Draggable {
 	private Vector3f	v3fDragFromPrevious;
 	private Vector3f	v3fMinSize = new Vector3f(40,40,0);
 	private float fCornerHotSpotRange = 20;
-	private boolean	bDragEvenIfOutside = true;
 	private ResizerCursorListener dcl = new ResizerCursorListener();
 	private int	iMouseButtonIndex=0;
 	
@@ -140,7 +139,7 @@ public class ResizablePanel extends Panel implements Draggable {
 	public boolean isCursorInsidePanel(float fCursorX, float fCursorY){
 		return isCursorInsidePanel(
 			new Vector3f(fCursorX,fCursorY,0),
-			getWorldTranslation().clone(), 
+			new Vector3f(getWorldTranslation()), 
 			new Vector3f(getPreferredSize())
 		);
 	}
@@ -285,7 +284,7 @@ public class ResizablePanel extends Panel implements Draggable {
                                                LAYER_RESIZABLE_BORDERS);
     
     setBorder(qbcBorder);
-    setBorderSize(iBorderSize);
+    setBorderSize(iBorderSize); //to apply default
     
     Styles styles = GuiGlobals.getInstance().getStyles();
     styles.applyStyles(this, getElementId(), style);
@@ -293,11 +292,6 @@ public class ResizablePanel extends Panel implements Draggable {
     CursorEventControl.addListenersToSpatial(this, dcl);
   }
 	
-  private void resetDrag(){
-		v3fDragFromPrevious=null;
-		eeInitialHook=null;
-  }
-  
   private class ResizerCursorListener implements CursorListener{
 		@Override
 		public void cursorButtonEvent(CursorButtonEvent event, Spatial target,				Spatial capture) {
@@ -307,18 +301,11 @@ public class ResizablePanel extends Panel implements Draggable {
 			
 			if(event.isPressed()){
 				v3fDragFromPrevious=new Vector3f(event.getX(),event.getY(),0);
-//				if(isDragEvenIfOutside()){
-					event.setConsumed(); //acknoledges event absorption
-//				}
+				event.setConsumed(); //acknoledges event absorption
 			}else{
-//				if(target!=ResizablePanel.this){
-//					if(!event.isPressed()){
-//						event.setConsumed(); //this prevents sending the event to other than this panel
-//						resetDrag();
-//					}
-//					return;
-//				}
-				resetDrag(); // button UP ends all
+				// button UP ends all
+				v3fDragFromPrevious=null;
+				eeInitialHook=null;
 				event.setConsumed(); //this also prevents sending the event to other than this panel
 			}
 		}
@@ -340,14 +327,6 @@ public class ResizablePanel extends Panel implements Draggable {
 		}
 		
   }
-  
-//  private boolean isBugfixUnrecognizedButtonUpEvent(){
-//		if(!Mouse.isButtonDown(iMouseButtonIndex)){ // LWJGL dependent code
-//			resetDrag();
-//			return true;
-//		}
-//		return false;
-//  }
   
   @StyleDefaults("resizablePanel")
   public static void initializeDefaultStyles( Attributes attrs ) {
@@ -424,18 +403,6 @@ public class ResizablePanel extends Panel implements Draggable {
 	
 	public Vector3f getMinSize() {
 		return v3fMinSize;
-	}
-
-	public boolean isDragEvenIfOutside() {
-		return bDragEvenIfOutside;
-	}
-
-	/**
-	 * to let dragging happens even if it cursor is outside the Panel!
-	 * @param bDragEvenIfOutside
-	 */
-	public void setDragEvenIfOutside(boolean bDragEvenIfOutside) {
-		this.bDragEvenIfOutside = bDragEvenIfOutside;
 	}
 
 	public int getMouseButtonIndex() {

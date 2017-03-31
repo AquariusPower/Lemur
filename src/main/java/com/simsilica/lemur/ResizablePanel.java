@@ -28,7 +28,6 @@
 package com.github.devconslejme;
 
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 import com.simsilica.lemur.GuiGlobals;
@@ -37,7 +36,6 @@ import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.QuadBackgroundComponent;
 import com.simsilica.lemur.core.GuiComponent;
 import com.simsilica.lemur.core.GuiControl;
-import com.simsilica.lemur.dnd.DragStatus;
 import com.simsilica.lemur.dnd.Draggable;
 import com.simsilica.lemur.event.CursorButtonEvent;
 import com.simsilica.lemur.event.CursorEventControl;
@@ -54,7 +52,7 @@ import com.simsilica.lemur.style.Styles;
 /**
  * @author Henrique Abdalla <https://github.com/AquariusPower><https://sourceforge.net/u/teike/profile/>
  */
-public class ResizablePanel extends Panel implements Draggable {
+public class ResizablePanel extends Panel {
 	private BorderLayout layout;
 	private Panel contents;
 	private int iBorderSize = 4;
@@ -363,23 +361,6 @@ public class ResizablePanel extends Panel implements Draggable {
 	    }
 	}
 	
-	@Override
-	public void setLocation(float x, float y) {
-	}
-
-	@Override
-	public Vector2f getLocation() {
-		return null;
-	}
-
-	@Override
-	public void updateDragStatus(DragStatus status) {
-	}
-
-	@Override
-	public void release() {
-	}
-
 	public float getCornerHotSpotRange() {
 		return fCornerHotSpotRange;
 	}

@@ -30,14 +30,14 @@ package com.github.devconslejme;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
-import com.simsilica.lemur.Container;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.Panel;
 import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.QuadBackgroundComponent;
 import com.simsilica.lemur.core.GuiComponent;
 import com.simsilica.lemur.core.GuiControl;
-import com.simsilica.lemur.dnd.Draggable;
+import com.simsilica.lemur.core.VersionedObject;
+import com.simsilica.lemur.core.VersionedReference;
 import com.simsilica.lemur.event.CursorButtonEvent;
 import com.simsilica.lemur.event.CursorEventControl;
 import com.simsilica.lemur.event.CursorListener;
@@ -67,6 +67,8 @@ public class ResizablePanel extends Panel {
 	private boolean	bUseBumpBorderMode=true;
 	private boolean	bUsingBumpBorderMode=false;
 	private Integer	iBorderSizeBkp=null;
+//	private Vector3f	v3fNewPos = new Vector3f();
+//	private Vector3f	v3fNewSize = new Vector3f();
 	
 	public static enum EEdge{
 		// !!!!!!!!!!!!!!THIS ORDER IS IMPORTANT!!!!!!!!!!!!!!
@@ -201,8 +203,8 @@ public class ResizablePanel extends Panel {
 		}
 		
 		////////////// resize and move
-		Vector3f v3fNewPos = getLocalTranslation().clone();
-		Vector3f v3fNewSize = v3fOldSize.clone();
+		Vector3f v3fNewPos = new Vector3f(getLocalTranslation());
+		Vector3f v3fNewSize= new Vector3f(v3fOldSize);
 		
 		//Cursor Position: NEW          Previous
 		float fDeltaX = v3fCursor.x - v3fDragFromPrevious.x; // positive to the right
@@ -266,8 +268,19 @@ public class ResizablePanel extends Panel {
 		
 		setPreferredSize(v3fNewSize);
 		setLocalTranslation(v3fNewPos);
+		
+		if(!v3fNewSize.equals(v3fOldSize)){
+			sizeChanged();
+		}
 	}
 	
+//	public static class VersionedVector3f extends Vector3f implements VersionedObject{}; //???
+//	VersionedReference<Vector3f> vrSize = new VersionedReference<Vector3f>(v3fMinSize); //???
+	/**
+	 * override to deal with size changes
+	 */
+	protected void sizeChanged() {}
+
 	public static final String LAYER_RESIZABLE_BORDERS = "resizableBorders";
 	
   public ResizablePanel( float width, float height, String style ) {

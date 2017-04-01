@@ -27,6 +27,10 @@
 
 package com.simsilica.lemur;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import com.github.devconslejme.ResizablePanel.EEdge;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
@@ -36,8 +40,6 @@ import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.QuadBackgroundComponent;
 import com.simsilica.lemur.core.GuiComponent;
 import com.simsilica.lemur.core.GuiControl;
-import com.simsilica.lemur.core.VersionedObject;
-import com.simsilica.lemur.core.VersionedReference;
 import com.simsilica.lemur.event.CursorButtonEvent;
 import com.simsilica.lemur.event.CursorEventControl;
 import com.simsilica.lemur.event.CursorListener;
@@ -70,6 +72,14 @@ public class ResizablePanel extends Panel {
 //	private Vector3f	v3fNewPos = new Vector3f();
 //	private Vector3f	v3fNewSize = new Vector3f();
 	
+//public static class VersionedVector3f extends Vector3f implements VersionedObject{}; //???
+//VersionedReference<Vector3f> vrSize = new VersionedReference<Vector3f>(v3fMinSize); //???
+	public static interface IResizableListener {
+		public void resizedTo(Vector3f v3fNewSize);
+		
+	}
+	private ArrayList<IResizableListener> airlList = new ArrayList<IResizableListener>();
+	
 	public static enum EEdge{
 		// !!!!!!!!!!!!!!THIS ORDER IS IMPORTANT!!!!!!!!!!!!!!
 		Dummy0,
@@ -85,30 +95,61 @@ public class ResizablePanel extends Panel {
 		BottomLeft,  //10
 		// I said THIS ORDER!!! not disorder... :)
 		;
-		
-		Float x,y;
+	} 
+	public Edge eTop = new Edge(EEdge.Top);
+	public Edge eRight = new Edge(EEdge.Right);
+	public Edge eBottom = new Edge(EEdge.Bottom);
+	public Edge eLeft = new Edge(EEdge.Left);
+	public Edge eTopLeft = new Edge(EEdge.TopLeft);
+	public Edge eTopRight = new Edge(EEdge.TopRight);
+	public Edge eBottomLeft = new Edge(EEdge.BottomLeft);
+	public Edge eBottomRight = new Edge(EEdge.BottomRight);
+	private HashMap<EEdge,Edge> hmEdge = new HashMap<EEdge,Edge>();
+	private void initEdges(){
+		hmEdge.put(EEdge.Top, eTop);
+		hmEdge.put(EEdge.Bottom, eBottom);
+		hmEdge.put(EEdge.Left, eLeft);
+		hmEdge.put(EEdge.Right, eRight);
+		hmEdge.put(EEdge.TopLeft, eTopLeft);
+		hmEdge.put(EEdge.TopRight, eTopRight);
+		hmEdge.put(EEdge.BottomLeft, eBottomLeft);
+		hmEdge.put(EEdge.BottomRight, eBottomRight);
+	}
+	private void setCurrentEdgesPos(Vector3f v3fPos, Vector3f v3fSize){
+		eTop			.set(								null, 					v3fPos.y);
+		eBottom	.set(								null, v3fPos.y-v3fSize.y);
+		eLeft		.set(						v3fPos.x, 							null);
+		eRight		.set(	v3fPos.x+v3fSize.x, 							null);
+		eTopRight		.setFrom(eTop,eRight);
+		eTopLeft			.setFrom(eTop,eLeft);
+		eBottomRight	.setFrom(eBottom,eRight);
+		eBottomLeft	.setFrom(eBottom,eLeft);
+	}
+	public void setAllEdgesEnabled(boolean bEnabled){
+		for(Edge edge:hmEdge.values()){
+			edge.setEnabled(bEnabled);
+		}
+	}
+	public static class Edge{
+		private EEdge edge;
+		private boolean bEnabled=true;
+		private Float x,y;
 		private float fMaxCurDistFromBorder = 10f;
+		
+		public Edge(EEdge edge) {
+			this.edge=edge;
+		}
 		
 		public void set(Float x,Float y){
 			this.x=x;
 			this.y=y;
 		}
-		private void setFrom(EEdge ee1, EEdge ee2) {
+		private void setFrom(Edge ee1, Edge ee2) {
 			x = useNotNull(ee1.x,ee2.x);
 			y = useNotNull(ee1.y,ee2.y);
 		}
 		private Float useNotNull(Float f1, Float f2){
 			return f1==null ? f2 : f1;
-		}
-		private static void setCurrentEdgesPos(Vector3f v3fPos, Vector3f v3fSize){
-			Top			.set(								null, 					v3fPos.y);
-			Bottom	.set(								null, v3fPos.y-v3fSize.y);
-			Left		.set(						v3fPos.x, 							null);
-			Right		.set(	v3fPos.x+v3fSize.x, 							null);
-			TopRight		.setFrom(Top,Right);
-			TopLeft			.setFrom(Top,Left);
-			BottomRight	.setFrom(Bottom,Right);
-			BottomLeft	.setFrom(Bottom,Left);
 		}
 		
 		public Float getX(){return x;}
@@ -120,7 +161,7 @@ public class ResizablePanel extends Panel {
 			this.fMaxCurDistFromBorder = fMaxCurDistFromBorder;
 		}
 		public boolean isNearEnough(Vector3f v3fCursor){
-			switch(this){
+			switch(edge){
 				case Top:
 				case Bottom:
 					return Math.abs(getY() - v3fCursor.y) < getMaxCurDistFromBorder();
@@ -136,8 +177,13 @@ public class ResizablePanel extends Panel {
 			}
 			throw new NullPointerException("bug: "+this);
 		}
-		
-	} 
+		public boolean isEnabled() {
+			return bEnabled;
+		}
+		public void setEnabled(boolean bEnabled) {
+			this.bEnabled = bEnabled;
+		}
+	}
 	
 	public boolean isCursorInsidePanel(float fCursorX, float fCursorY){
 		return isCursorInsidePanel(
@@ -160,7 +206,7 @@ public class ResizablePanel extends Panel {
 		
 		Vector3f v3fOldPos=getWorldTranslation().clone();
 		Vector3f v3fOldSize = new Vector3f(getPreferredSize());
-		EEdge.setCurrentEdgesPos(v3fOldPos, v3fOldSize);
+		setCurrentEdgesPos(v3fOldPos, v3fOldSize);
 		
 		Vector3f v3fPanelCenter=v3fOldSize.divide(2f);
 		
@@ -197,7 +243,11 @@ public class ResizablePanel extends Panel {
 				ee = EEdge.values()[eeX.ordinal()+eeY.ordinal()];
 			}
 			
-			eeInitialHook=ee;
+			if(hmEdge.get(ee).isEnabled()){
+				eeInitialHook=ee;
+			}else{
+				return;
+			}
 		}else{
 			ee=eeInitialHook;
 		}
@@ -270,26 +320,26 @@ public class ResizablePanel extends Panel {
 		setLocalTranslation(v3fNewPos);
 		
 		if(!v3fNewSize.equals(v3fOldSize)){
-			sizeChanged();
+			for(IResizableListener irl:airlList){
+				irl.resizedTo(v3fNewSize);
+			}
 		}
 	}
 	
-//	public static class VersionedVector3f extends Vector3f implements VersionedObject{}; //???
-//	VersionedReference<Vector3f> vrSize = new VersionedReference<Vector3f>(v3fMinSize); //???
-	/**
-	 * override to deal with size changes
-	 */
-	protected void sizeChanged() {}
-
 	public static final String LAYER_RESIZABLE_BORDERS = "resizableBorders";
 	
-  public ResizablePanel( float width, float height, String style ) {
-    super(false, new ElementId("resizablePanel"), style);
+  public ResizablePanel( Vector3f v3fSize, String strStyle ) {
+		this(v3fSize.x, v3fSize.y, strStyle);
+	}
+	public ResizablePanel( float fWidth, float fHeight, String strStyle ) {
+    super(false, new ElementId("resizablePanel"), strStyle);
+    
+    initEdges();
     
     this.layout = new BorderLayout();
     getControl(GuiControl.class).setLayout(layout);
     
-    getControl(GuiControl.class).setPreferredSize(new Vector3f(width, height, 0));
+    getControl(GuiControl.class).setPreferredSize(new Vector3f(fWidth, fHeight, 0));
     
     // Set our layers
     getControl(GuiControl.class).setLayerOrder(LAYER_INSETS, 
@@ -301,7 +351,7 @@ public class ResizablePanel extends Panel {
     setBorderSize(iBorderSize); //to apply default
     
     Styles styles = GuiGlobals.getInstance().getStyles();
-    styles.applyStyles(this, getElementId(), style);
+    styles.applyStyles(this, getElementId(), strStyle);
     
     CursorEventControl.addListenersToSpatial(this, dcl);
   }
@@ -371,8 +421,9 @@ public class ResizablePanel extends Panel {
   }
   
 	@StyleAttribute(value="resizableBorders", lookupDefault=false)
-	public void setResizableBorders( GuiComponent bg ) {        
-	    getControl(GuiControl.class).setComponent(LAYER_RESIZABLE_BORDERS, bg);   
+	public ResizablePanel setResizableBorders( GuiComponent bg ) {        
+		getControl(GuiControl.class).setComponent(LAYER_RESIZABLE_BORDERS, bg);   
+		return this;
 	}
 	
   public GuiComponent getResizableBorders() {
@@ -382,10 +433,11 @@ public class ResizablePanel extends Panel {
 	/**
 	 *  Resets the child contents that will be expanded/collapsed
 	 *  with the rollup.
+	 * @return 
 	 */
-	public void setContents( Panel p ) {
+	public ResizablePanel setContents( Panel p ) {
 	    if( this.contents == p ) {
-	        return;
+	        return this;
 	    }
 	    
 	    if( this.contents != null) {
@@ -398,23 +450,26 @@ public class ResizablePanel extends Panel {
 	        layout.addChild(contents,  BorderLayout.Position.Center);
 	      }
 	    }
+			return this;
 	}
 	
 	public float getCornerHotSpotRange() {
 		return fCornerHotSpotRange;
 	}
 
-	public void setCornerHotSpotRange(float fCornerHotSpotRange) {
+	public ResizablePanel setCornerHotSpotRange(float fCornerHotSpotRange) {
 		this.fCornerHotSpotRange = fCornerHotSpotRange;
+		return this;
 	}
 
 	public int getBorderSize() {
 		return iBorderSize;
 	}
 
-	public void setBorderSize(int i){
+	public ResizablePanel setBorderSize(int i){
 		this.iBorderSize=(i);
 		getBorder().setMargin(this.iBorderSize, this.iBorderSize);
+		return this;
 	}
 	
 	@Override
@@ -424,6 +479,7 @@ public class ResizablePanel extends Panel {
 	
 	/**
 	 * border must be of type QuadBackgroundComponent
+	 * @return 
 	 */
 	@Override
 	public void setBorder(GuiComponent bg) {
@@ -431,8 +487,9 @@ public class ResizablePanel extends Panel {
 		setBorderSize(iBorderSize);
 	}
 	
-	public void setMinSize(Vector3f v3f){
+	public ResizablePanel setMinSize(Vector3f v3f){
 		this.v3fMinSize=(v3f);
+		return this;
 	}
 	
 	public Vector3f getMinSize() {
@@ -446,27 +503,45 @@ public class ResizablePanel extends Panel {
 	/**
 	 * the drag activator, defaults to left mouse button.
 	 * @param iMouseButtonIndex
+	 * @return 
 	 */
-	public void setMouseButtonIndex(int iMouseButtonIndex) {
+	public ResizablePanel setMouseButtonIndex(int iMouseButtonIndex) {
 		this.iMouseButtonIndexToDrag = iMouseButtonIndex;
+		return this;
 	}
 	public Vector3f getCurrentDragFromLocation() {
 		return v3fDragFromPrevious!=null?v3fDragFromPrevious.clone():null;
 	}
-	public EEdge getDraggedEdge() {
-		return eeInitialHook;
+	public Edge getDraggedEdge() {
+		return hmEdge.get(eeInitialHook);
 	}
 	public boolean isUseBumpBorderMode() {
 		return bUseBumpBorderMode;
 	}
-	public void setUseBumpBorderMode(boolean bUseBumpBorderMode) {
+	public ResizablePanel setUseBumpBorderMode(boolean bUseBumpBorderMode) {
 		this.bUseBumpBorderMode = bUseBumpBorderMode;
+		return this;
 	}
 	public int getBumpedBorderSize() {
 		return iBumpedBorderSize;
 	}
-	public void setBumpedBorderSize(int iBumpedBorderSize) {
+	public ResizablePanel setBumpedBorderSize(int iBumpedBorderSize) {
 		this.iBumpedBorderSize = iBumpedBorderSize;
+		return this;
+	}
+	public ResizablePanel addResizableListener(IResizableListener irl) {
+		if(irl==null)throw new NullPointerException("invalid null listener");
+		
+		if(!airlList.contains(irl)){
+			airlList.add(irl);
+		}else{
+			System.err.println("listener already added "+irl);
+		}
+		
+		return this;
+	}
+	public Edge getEdge(EEdge edge) {
+		return hmEdge.get(edge);
 	}
 
 }

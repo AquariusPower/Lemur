@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/main/resources"/>
+	<classpathentry kind="src" path="extensions/LemurProps/src/main/resources"/>
+	<classpathentry kind="src" path="extensions/LemurProps/src/main/java"/>
+	<classpathentry kind="src" path="extensions/ScriptMonkey/src"/>
+	<classpathentry kind="src" path="extensions/LemurProto/src/main/java"/>
+	<classpathentry kind="src" path="extensions/LemurProto/src/main/resources"/>
+	<classpathentry kind="src" path="examples/demos/src/main/java"/>
+	<classpathentry kind="src" path="examples/demos/src/main/resources"/>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/jme310stable"/>
+	<classpathentry kind="lib" path="lib/groovy-all-2.1.9.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.12.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.7.5.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.7.5.jar"/>
+	<classpathentry kind="lib" path="lib/guava-21.0.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
